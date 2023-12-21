@@ -2,30 +2,29 @@ from PIL import Image
 import numpy as np
 from scipy.interpolate import interp1d
 from itertools import cycle
-# from cv2 import VideoCapture
+import cv2 
 # from pathlib import Path
 
-# cam = VideoCapture(0) 
+cam = cv2.VideoCapture(0) 
   
 # # reading the input using the camera 
-# result, image = cam.read()
-# if not result:
-#     print("no webcam sad")
-
-# img = image
-img = Image.open('samples/stars.jpg')
+result, image = cam.read()
+if not result:
+    raise ValueError("No webcam")
+    # print("no webcam sad")
+img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+img = Image.fromarray(img)
+# img = Image.open('samples/stars.jpg')
 img = img.resize([254,254])
 img_bw = 255 - np.mean(img, axis = -1)
 n_lines = 30
 
 lines = img_bw[:n_lines *int(img_bw.shape[0]/n_lines) , :].reshape(n_lines, int(img_bw.shape[0]/n_lines), img_bw.shape[1])
 lines = np.mean(lines/np.max(lines), axis=1)
-print(lines.shape)
 
 t = np.linspace(0,1, 1000)
 lines_interp = interp1d(np.linspace(0,1, lines.shape[1]), lines, axis = 1)
 lines = lines_interp(t)
-print(lines.shape)
 # exit()
 
 fc = 10
@@ -37,7 +36,6 @@ phi = fc*t + b * np.cumsum(lines, axis = 1)
 line_vals = np.sin(2*np.pi * phi)*lines/n_lines/1.5/ (img_bw.shape[0]/img_bw.shape[1])
 line_vals = line_vals + np.linspace(0,img_bw.shape[0]/img_bw.shape[1], n_lines)[:,np.newaxis]
 line_vals = 1 - line_vals
-print(line_vals.shape)
 # [plt.plot(t,v) for v in line_vals]
 # plt.show()
 drawing = np.concatenate([np.vstack((t[::dir], v[::dir])).T for v, dir in zip(line_vals, cycle([1,-1]))])
@@ -87,10 +85,8 @@ with open(G_CODE_FILE, "w") as f:
         f.write(PU_COMMAND)
     f.write(gcode("G0", X=0, Y=0, F=RAPID))
 
+with open(G_CODE_FILE, "r") as f:
+    print(f.read())
 
 
 
-
-
-
-print("done")
